@@ -9,14 +9,14 @@ from game.settings import *
 class AlphaBetaPruner(object):
     """Alpha-Beta Pruning algorithm."""
 
-    def __init__(self, mutex, duration, pieces, first_player, second_player):
+    def __init__(self, mutex, max_depth, pieces, first_player, second_player):
         self.mutex = mutex
         self.board = 0
         self.move = 1
         self.white = 2
         self.black = 3
-        self.duration = duration
-        self.lifetime = None
+        self.max_depth = max_depth
+        # self.lifetime = None
         self.infinity = 1.0e400
         self.first_player, self.second_player = (self.white, self.black) \
             if first_player == WHITE else (self.black, self.white)
@@ -31,7 +31,7 @@ class AlphaBetaPruner(object):
     def alpha_beta_search(self):
         """ Returns a valid action for the AI.
         """
-        self.lifetime = datetime.datetime.now() + datetime.timedelta(seconds=self.duration)
+        # self.lifetime = datetime.datetime.now() + datetime.timedelta(seconds=self.max_depth)
         depth = 0
         fn = lambda action: self.min_value(depth, self.next_state(self.state, action), -self.infinity,
                                            self.infinity)
@@ -47,7 +47,7 @@ class AlphaBetaPruner(object):
     def max_value(self, depth, current_state, alpha, beta):
         """ Calculates the best possible move for the AI.
         """
-        if self.cutoff_test(current_state, depth):
+        if self.cutoff_test(depth):
             return self.evaluation(current_state, self.first_player)
 
         value = -self.infinity
@@ -64,7 +64,7 @@ class AlphaBetaPruner(object):
     def min_value(self, depth, state, alpha, beta):
         """ Calculates the best possible move for the player.
         """
-        if self.cutoff_test(state, depth):
+        if self.cutoff_test(depth):
             return self.evaluation(state, self.second_player)
 
         value = self.infinity
@@ -164,7 +164,6 @@ class AlphaBetaPruner(object):
 
         return [(x, y) for found, x, y, tile in moves if found]
 
-
     def mark_move(self, player, opponent, tile, pieces, direction):
         """ Returns True whether the current tile piece is a move for the current player,
             otherwise it returns False.
@@ -186,9 +185,9 @@ class AlphaBetaPruner(object):
 
         return False, int(tile % WIDTH), int(tile / HEIGHT), tile
 
-    def cutoff_test(self, state, depth):
+    def cutoff_test(self, depth):
         """ Returns True when the cutoff limit has been reached.
         """
-        return depth > 8  # or datetime.datetime.now() > self.lifetime
+        return depth > self.max_depth
 
 

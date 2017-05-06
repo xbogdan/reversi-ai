@@ -93,10 +93,10 @@ class AiController(Controller):
     """ Artificial Intelligence Controller.
     """
 
-    def __init__(self, id, colour, duration):
+    def __init__(self, id, colour, max_depth):
         self.id = id
         self.colour = colour
-        self.duration = duration
+        self.max_depth = max_depth
 
     def next_move(self, board):
         """ Will return a single valid move as an (x, y) tuple.
@@ -110,7 +110,7 @@ class AiController(Controller):
         """
 
 
-        brain = Brain(self.duration, stdoutmutex, workQueue, board.pieces, self.colour,
+        brain = Brain(self.max_depth, stdoutmutex, workQueue, board.pieces, self.colour,
                       BLACK if self.colour is WHITE else WHITE)
         brain.start()
 

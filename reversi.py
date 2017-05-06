@@ -9,8 +9,8 @@ def main():
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--timeout', help="Number of seconds the brain is allowed to think before making its move.",
-                        type=int, default=20)
+    parser.add_argument('--depth', help="Max depth the tree is allowed to think before making its move.",
+                        type=int, default=5)
     parser.add_argument('--display-moves', help="Whether legal moves should be displayed or not.", action='store_true')
     parser.add_argument('--colour', help="Display the game in 256 colours.", action='store_true')
     parser.add_argument('--player', help="If you want to play against the ai", action='store_true')
@@ -29,7 +29,7 @@ def main():
     if not players:
         players = ['player', 'ai']
 
-    game = Game(timeout=args.timeout,
+    game = Game(max_depth=args.depth,
                 display_moves=args.display_moves,
                 colour=args.colour,
                 players=players)

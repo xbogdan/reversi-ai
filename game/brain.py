@@ -6,10 +6,10 @@ __author__ = 'bengt'
 
 
 class Brain(threading.Thread):
-    def __init__(self, duration, mutex, q, pieces, first_player, second_player):
+    def __init__(self, max_depth, mutex, q, pieces, first_player, second_player):
         self.mutex = mutex
         self.q = q
-        self.duration = duration
+        self.max_depth = max_depth
         self.pieces = pieces
         self.first_player = first_player
         self.second_player = second_player
@@ -21,7 +21,7 @@ class Brain(threading.Thread):
         """ Starts the Minimax algorithm with the Alpha-Beta Pruning optimization
             and puts the result in a queue once done.
         """
-        pruner = AlphaBetaPruner(self.mutex, self.duration, self.pieces, self.first_player, self.second_player)
+        pruner = AlphaBetaPruner(self.mutex, self.max_depth, self.pieces, self.first_player, self.second_player)
         result = pruner.alpha_beta_search()
         self.q.put(result)
 

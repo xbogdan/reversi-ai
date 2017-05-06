@@ -11,13 +11,13 @@ class Game(object):
     """Game ties everything together. It has a board,
     two controllers, and can draw to the screen."""
 
-    def __init__(self, timeout=1000,
+    def __init__(self, max_depth=1000,
                  display_moves=True,
                  players=['ai', 'ai'],
                  colour=False):
 
         self.board = Board(colour)
-        self.timeout = timeout
+        self.max_depth = max_depth
         self.ai_counter = 0
         self.list_of_colours = [BLACK, WHITE]
         self.players = players
@@ -40,7 +40,7 @@ class Game(object):
             return PlayerController(colour)
         else:
             self.ai_counter += 1
-            return AiController(self.ai_counter, colour, self.timeout)
+            return AiController(self.ai_counter, colour, self.max_depth)
 
     def show_info(self):
         """ Prints game information to stdout.
