@@ -102,18 +102,18 @@ class AlphaBetaPruner(object):
         #                  -1
 
         corners_player = (state[0] == player) + \
-                         (state[7] == player) + \
-                         (state[56] == player) + \
-                         (state[63] == player)
+                         (state[(WIDTH - 1)] == player) + \
+                         (state[(WIDTH - 1) * WIDTH] == player) + \
+                         (state[WIDTH**2 - 1] == player)
         corners_opponent = -1 * (state[0] == opponent) + \
-                           (state[7] == opponent) + \
-                           (state[56] == opponent) + \
-                           (state[63] == opponent)
+                           (state[(WIDTH - 1)] == opponent) + \
+                           (state[(WIDTH - 1) * WIDTH] == opponent) + \
+                           (state[WIDTH**2 - 1] == opponent)
         corners_eval = corners_player + corners_opponent
 
-        edges_player = len([x for x in state if state == player and (state % 8 == 0 or state % 8 == 8)]) / (
+        edges_player = len([x for x in state if state == player and (state % WIDTH == 0 or state % WIDTH == WIDTH)]) / (
             WIDTH * HEIGHT)
-        edges_opponent = -1 * len([x for x in state if state == opponent and (state % 8 == 0 or state % 8 == 8)]) / (
+        edges_opponent = -1 * len([x for x in state if state == opponent and (state % WIDTH == 0 or state % WIDTH == WIDTH)]) / (
             WIDTH * HEIGHT)
         edges_eval = edges_player + edges_opponent
 
@@ -142,7 +142,7 @@ class AlphaBetaPruner(object):
         state[xx + (yy * WIDTH)] = player
         for d in DIRECTIONS:
             tile = xx + (yy * WIDTH) + d
-            if tile < 0 or tile >= 64:
+            if tile < 0 or tile >= (WIDTH - 1) * WIDTH:
                 continue
 
             while state[tile] != self.board:
@@ -189,6 +189,6 @@ class AlphaBetaPruner(object):
     def cutoff_test(self, state, depth):
         """ Returns True when the cutoff limit has been reached.
         """
-        return depth > 1000 or datetime.datetime.now() > self.lifetime
+        return depth > 8  # or datetime.datetime.now() > self.lifetime
 
 

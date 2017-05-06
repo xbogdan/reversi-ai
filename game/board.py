@@ -8,8 +8,8 @@ class Board(object):
     """Board represents the current state of the Reversi board."""
 
     def __init__(self, colour):
-        self.width = 8
-        self.height = 8
+        self.width = WIDTH
+        self.height = HEIGHT
         self.pieces = list((Piece(x, y, colour)
                             for y in range(0, self.height)
                             for x in range(0, self.width)))
@@ -21,7 +21,7 @@ class Board(object):
 
         grid = ''
         i = 0
-        for row_of_pieces in chunks(self.pieces, 8):
+        for row_of_pieces in chunks(self.pieces, WIDTH):
             row = ''
             for p in row_of_pieces:
                 row += p.draw()
@@ -152,9 +152,9 @@ class Board(object):
     def outside_board(self, tile, direction):
         """ Returns true if a tile is outside the board.
         """
-        return (direction in (NORTHWEST, NORTH, NORTHEAST) and 0 <= tile <= 7) or \
-           (direction in (SOUTHWEST, SOUTH, SOUTHEAST) and 56 <= tile <= 63) or \
-           (direction in (NORTHEAST, EAST, SOUTHEAST) and tile % WIDTH == 7) or \
+        return (direction in (NORTHWEST, NORTH, NORTHEAST) and 0 <= tile <= WIDTH - 1) or \
+           (direction in (SOUTHWEST, SOUTH, SOUTHEAST) and (WIDTH-1) * WIDTH <= tile <= WIDTH**2 - 1) or \
+           (direction in (NORTHEAST, EAST, SOUTHEAST) and tile % WIDTH == WIDTH - 1) or \
            (direction in (NORTHWEST, WEST, SOUTHWEST) and tile % WIDTH == 0)
 
     def __repr__(self):

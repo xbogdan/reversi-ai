@@ -24,10 +24,10 @@ class Game(object):
         self.display_moves = display_moves
         self.controllers = deque([self._make_controller(c, p) for c, p in zip(self.list_of_colours, self.players)])
         self.player = self.controllers[0].get_colour()
-        self.board.set_black(4, 3)
-        self.board.set_black(3, 4)
-        self.board.set_white(4, 4)
-        self.board.set_white(3, 3)
+        self.board.set_black(int(WIDTH/2), int(WIDTH/2 - 1))
+        self.board.set_black(int(WIDTH/2 - 1), int(WIDTH/2))
+        self.board.set_white(int(WIDTH/2), int(WIDTH/2))
+        self.board.set_white(int(WIDTH/2 - 1), int(WIDTH/2 - 1))
         self.board.mark_moves(self.player)
         self.previous_move = None
 
