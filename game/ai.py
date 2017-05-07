@@ -1,5 +1,8 @@
 import datetime
 import sys
+
+from game.board import Board
+from game.piece import Piece
 from game.settings import *
 
 __author__ = 'bengt'
@@ -20,6 +23,7 @@ class AlphaBetaPruner(object):
         self.first_player, self.second_player = (self.white, self.black) \
             if first_player == WHITE else (self.black, self.white)
         self.state = self.make_state(pieces)
+        # self.b = Board(True)
 
     def make_state(self, pieces):
         """ Returns a tuple in the form of "current_state", that is: (current_player, state).
@@ -28,12 +32,13 @@ class AlphaBetaPruner(object):
         return self.first_player, [results[p.get_state()] for p in pieces]
 
     def run(self):
-        return self.pvsplit(self.state, 0, -self.infinity, self.infinity)
+        return self.pvsplit(current_state=self.state, depth=0, alpha=-self.infinity, beta=self.infinity, action=None)[1]
 
-    def pvsplit(self, current_state, depth, alpha, beta, action=None):
-        # print('Current state:', current_state)
-        actions = self.actions(self.state)
-        print(actions)
+    def pvsplit(self, current_state, depth, alpha, beta, action):
+        print('\nCurrent player:', current_state[0])
+        actions = self.actions(current_state)
+        print('Actions:', actions)
+
         if (self.is_leaf(depth) or not actions) and action:
             if depth % 2 == 0:
                 return self.evaluation(current_state, self.second_player), action
@@ -41,6 +46,12 @@ class AlphaBetaPruner(object):
                 return self.evaluation(current_state, self.first_player), action
 
         next_action = actions[0]
+        # if depth % 2 == 0:
+        #     self.b.mark_move(self.second_player, Piece(next_action[0], next_action[1], True), DIRECTIONS)
+        # else:
+        #     self.b.mark_move(self.first_player, Piece(next_action[0], next_action[1], True), DIRECTIONS)
+        #
+        # print(self.b.draw())
         next_state = self.next_state(current_state, next_action)
 
         score, action = self.pvsplit(next_state, depth+1, alpha, beta, next_action)
