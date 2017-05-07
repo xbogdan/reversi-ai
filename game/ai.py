@@ -40,10 +40,7 @@ class AlphaBetaPruner(object):
         print('Actions:', actions)
 
         if (self.is_leaf(depth) or not actions) and action:
-            if depth % 2 == 0:
-                return self.evaluation(current_state, self.second_player), action
-            else:
-                return self.evaluation(current_state, self.first_player), action
+            return self.evaluation(current_state, self.get_next_player(current_state[0])), action
 
         next_action = actions[0]
         # if depth % 2 == 0:
@@ -74,6 +71,11 @@ class AlphaBetaPruner(object):
 
     def is_leaf(self, depth):
         return self.cutoff_test(depth)
+
+    def get_next_player(self, player):
+        if player == self.first_player:
+            return self.second_player
+        return self.first_player
 
     def alpha_beta_search(self):
         """ Returns a valid action for the AI.
