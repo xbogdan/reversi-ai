@@ -77,7 +77,7 @@ class Game(object):
         """
         while True:
             os.system('clear')
-            self.show_info()
+            # self.show_info()
             self.show_board()
 
             try:

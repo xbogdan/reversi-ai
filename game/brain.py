@@ -22,6 +22,6 @@ class Brain(threading.Thread):
             and puts the result in a queue once done.
         """
         pruner = AlphaBetaPruner(self.mutex, self.max_depth, self.pieces, self.first_player, self.second_player)
-        result = pruner.alpha_beta_search()
+        result = pruner.run()
         self.q.put(result)
 

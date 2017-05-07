@@ -1,9 +1,8 @@
 import datetime
 import sys
+from game.settings import *
 
 __author__ = 'bengt'
-
-from game.settings import *
 
 
 class AlphaBetaPruner(object):
@@ -28,10 +27,47 @@ class AlphaBetaPruner(object):
         results = {BOARD: self.board, MOVE: self.board, WHITE: self.white, BLACK: self.black}
         return self.first_player, [results[p.get_state()] for p in pieces]
 
+    def run(self):
+        return self.pvsplit(self.state, 0, -self.infinity, self.infinity)
+
+    def pvsplit(self, current_state, depth, alpha, beta, action=None):
+        # print('Current state:', current_state)
+        actions = self.actions(self.state)
+        print(actions)
+        if (self.is_leaf(depth) or not actions) and action:
+            if depth % 2 == 0:
+                return self.evaluation(current_state, self.second_player), action
+            else:
+                return self.evaluation(current_state, self.first_player), action
+
+        next_action = actions[0]
+        next_state = self.next_state(current_state, next_action)
+
+        score, action = self.pvsplit(next_state, depth+1, alpha, beta, next_action)
+
+        # if score > beta:
+        #     return beta
+        # if score > alpha:
+        #     alpha = score
+
+        # parallel
+        # for action in actions[1:]:
+        #     score = self.min_value(depth, self.next_state(self.state, action), alpha, beta)
+        #
+        #     if score > beta:
+        #         return beta
+        #     if score > alpha:
+        #         alpha = score
+
+        return score, next_action
+
+    def is_leaf(self, depth):
+        return self.cutoff_test(depth)
+
     def alpha_beta_search(self):
         """ Returns a valid action for the AI.
         """
-        # self.lifetime = datetime.datetime.now() + datetime.timedelta(seconds=self.max_depth)
+
         depth = 0
         fn = lambda action: self.min_value(depth, self.next_state(self.state, action), -self.infinity,
                                            self.infinity)

@@ -18,7 +18,7 @@ def main():
 
     args = parser.parse_args()
 
-    if args.timeout < 0:
+    if args.depth < 0:
         exit()
 
     players=[]

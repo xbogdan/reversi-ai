@@ -109,7 +109,6 @@ class AiController(Controller):
             that it hasn't crashed.
         """
 
-
         brain = Brain(self.max_depth, stdoutmutex, workQueue, board.pieces, self.colour,
                       BLACK if self.colour is WHITE else WHITE)
         brain.start()
