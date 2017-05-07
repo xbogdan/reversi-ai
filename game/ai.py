@@ -34,9 +34,7 @@ class AlphaBetaPruner(object):
         return self.pvsplit(current_state=self.state, depth=0, alpha=-self.infinity, beta=self.infinity, action=None)[1]
 
     def pvsplit(self, current_state, depth, alpha, beta, action):
-        print('\nCurrent player:', current_state[0])
         actions = self.actions(current_state)
-        print('Actions:', actions)
 
         if (self.is_leaf(depth) or not actions) and action:
             return self.evaluation(current_state, self.get_next_player(current_state[0])), action
@@ -44,24 +42,25 @@ class AlphaBetaPruner(object):
         next_action = actions[0]
         next_state = self.next_state(current_state, next_action)
 
-        score, action = self.pvsplit(next_state, depth+1, alpha, beta, next_action)
+        score, action = self.pvsplit(next_state, depth + 1, alpha, beta, next_action)
 
         if score > beta:
-            return beta, action
+            return beta, next_action
         if score > alpha:
             alpha = score
 
         # parallel
-        for action in actions[1:]:
-            next_state = self.next_state(current_state, action)
+        for action_ in actions[1:]:
+            next_state = self.next_state(current_state, action_)
             score = self.alpha_beta_2(next_state, depth+1, alpha, beta)
         #     score = self.min_value(depth, self.next_state(self.state, action), alpha, beta)
             if score > beta:
-                return beta, action
+                return beta, action_
             if score > alpha:
                 alpha = score
+                next_action = action_
 
-        return alpha, action
+        return alpha, next_action
 
     def alpha_beta_2(self, current_state, depth, alpha, beta):
         actions = self.actions(current_state)
@@ -73,6 +72,7 @@ class AlphaBetaPruner(object):
 
         for action in actions:
             next_state = self.next_state(current_state, action)
+
             if self.is_min(depth):
                 score = self.alpha_beta_2(next_state, depth+1, alpha, best_score)
                 if score <= alpha:
@@ -85,6 +85,7 @@ class AlphaBetaPruner(object):
                     return beta
                 if score > best_score:
                     best_score = score
+
         return best_score
 
     def is_min(self, depth):
@@ -222,6 +223,7 @@ class AlphaBetaPruner(object):
         """ Returns the next state in the form of a "current_state" tuple, (current_player, state).
         """
         player, state = current_state
+        # player, state = current_state[0], current_state[1].copy()
         opponent = self.opponent(player)
 
         xx, yy = action
