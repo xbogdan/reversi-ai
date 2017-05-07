@@ -23,7 +23,6 @@ class AlphaBetaPruner(object):
         self.first_player, self.second_player = (self.white, self.black) \
             if first_player == WHITE else (self.black, self.white)
         self.state = self.make_state(pieces)
-        # self.b = Board(True)
 
     def make_state(self, pieces):
         """ Returns a tuple in the form of "current_state", that is: (current_player, state).
@@ -43,31 +42,69 @@ class AlphaBetaPruner(object):
             return self.evaluation(current_state, self.get_next_player(current_state[0])), action
 
         next_action = actions[0]
-        # if depth % 2 == 0:
-        #     self.b.mark_move(self.second_player, Piece(next_action[0], next_action[1], True), DIRECTIONS)
-        # else:
-        #     self.b.mark_move(self.first_player, Piece(next_action[0], next_action[1], True), DIRECTIONS)
-        #
-        # print(self.b.draw())
         next_state = self.next_state(current_state, next_action)
 
         score, action = self.pvsplit(next_state, depth+1, alpha, beta, next_action)
 
-        # if score > beta:
-        #     return beta
-        # if score > alpha:
-        #     alpha = score
+        if score > beta:
+            return beta, action
+        if score > alpha:
+            alpha = score
 
         # parallel
-        # for action in actions[1:]:
+        for action in actions[1:]:
+            next_state = self.next_state(current_state, action)
+            score = self.alpha_beta_2(next_state, depth+1, alpha, beta)
         #     score = self.min_value(depth, self.next_state(self.state, action), alpha, beta)
-        #
-        #     if score > beta:
-        #         return beta
-        #     if score > alpha:
-        #         alpha = score
+            if score > beta:
+                return beta, action
+            if score > alpha:
+                alpha = score
 
-        return score, next_action
+        return alpha, action
+
+    def alpha_beta_2(self, current_state, depth, alpha, beta):
+        actions = self.actions(current_state)
+
+        if self.is_leaf(depth) or not actions:
+            return self.evaluation(current_state, self.get_next_player(current_state[0]))
+
+        best_score = beta if self.is_min(depth) else alpha
+
+        for action in actions:
+            next_state = self.next_state(current_state, action)
+            if self.is_min(depth):
+                score = self.alpha_beta_2(next_state, depth+1, alpha, best_score)
+                if score <= alpha:
+                    return alpha
+                if score < best_score:
+                    best_score = score
+            else:
+                score = self.alpha_beta_2(next_state, depth+1, best_score, beta)
+                if score >= beta:
+                    return beta
+                if score > best_score:
+                    best_score = score
+        return best_score
+
+    def is_min(self, depth):
+        return depth % 2 == 1
+
+    def alpha_beta(self, current_state, depth, alpha, beta):
+        actions = self.actions(current_state)
+
+        if self.is_leaf(depth) or not actions:
+            return self.evaluation(current_state, self.get_next_player(current_state[0]))
+
+        for action in actions:
+            next_state = self.next_state(current_state, action)
+            score = - self.alpha_beta(next_state, depth+1, -beta, -alpha)
+            if score >= beta:
+                return beta
+            if score > alpha:
+                alpha = score
+
+        return alpha
 
     def is_leaf(self, depth):
         return self.cutoff_test(depth)
