@@ -120,7 +120,7 @@ class AlphaBetaPruner(object):
     def max_value(self, depth, current_state, alpha, beta):
         """ Calculates the best possible move for the AI.
         """
-        if self.cutoff_test(depth):
+        if self.is_leaf(depth):
             return self.evaluation(current_state, self.first_player)
 
         value = -self.infinity
@@ -137,7 +137,7 @@ class AlphaBetaPruner(object):
     def min_value(self, depth, state, alpha, beta):
         """ Calculates the best possible move for the player.
         """
-        if self.cutoff_test(depth):
+        if self.is_leaf(depth):
             return self.evaluation(state, self.second_player)
 
         value = self.infinity
