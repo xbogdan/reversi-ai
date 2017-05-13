@@ -21,7 +21,7 @@ class Brain(threading.Thread):
         """ Starts the Minimax algorithm with the Alpha-Beta Pruning optimization
             and puts the result in a queue once done.
         """
-        pruner = AlphaBetaPruner(self.mutex, self.max_depth, self.pieces, self.first_player, self.second_player)
+        pruner = AlphaBetaPruner(self.mutex, self.max_depth, self.pieces, self.first_player)
         result = pruner.run()
         self.q.put(result)
 

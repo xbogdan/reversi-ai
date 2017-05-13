@@ -1,12 +1,16 @@
 from game.settings import *
+from mpi4py import MPI
 
 __author__ = 'bengt'
+
+COMM = MPI.COMM_WORLD
+SIZE = COMM.Get_size()
 
 
 class AlphaBetaPruner(object):
     """Alpha-Beta Pruning algorithm."""
 
-    def __init__(self, mutex, max_depth, pieces, first_player, second_player):
+    def __init__(self, mutex, max_depth, pieces, first_player):
         self.mutex = mutex
         self.board = 0
         self.move = 1
@@ -14,27 +18,27 @@ class AlphaBetaPruner(object):
         self.black = 3
         self.max_depth = max_depth
         self.infinity = 1.0e400
-        self.first_player, self.second_player = (self.white, self.black) \
-            if first_player == WHITE else (self.black, self.white)
+        self.first_player, self.second_player = (WHITE_ID, BLACK_ID) \
+            if first_player == WHITE else (BLACK_ID, WHITE_ID)
         self.state = self.make_state(pieces)
 
     def make_state(self, pieces):
         """ Returns a tuple in the form of "current_state", that is: (current_player, state).
         """
-        results = {BOARD: self.board, MOVE: self.board, WHITE: self.white, BLACK: self.black}
+        results = {BOARD: BOARD_ID, MOVE: BOARD_ID, WHITE: WHITE_ID, BLACK: BLACK_ID}
         return self.first_player, [results[p.get_state()] for p in pieces]
 
     def run(self):
         return self.pvsplit(current_state=self.state, depth=0, alpha=-self.infinity, beta=self.infinity, action=None)[1]
 
     def pvsplit(self, current_state, depth, alpha, beta, action):
-        actions = self.actions(current_state)
+        actions = AlphaBetaPruner.actions(current_state)
 
         if (self.is_leaf(depth) or not actions) and action:
-            return self.evaluation(current_state, self.opponent(current_state[0])), action
+            return AlphaBetaPruner.evaluation(current_state, AlphaBetaPruner.opponent(current_state[0])), action
 
         next_action = actions[0]
-        next_state = self.next_state(current_state, next_action)
+        next_state = AlphaBetaPruner.next_state(current_state, next_action)
 
         score, action = self.pvsplit(next_state, depth + 1, alpha, beta, next_action)
 
@@ -44,37 +48,97 @@ class AlphaBetaPruner(object):
             alpha = score
 
         # parallel
-        for action_ in actions[1:]:
-            next_state = self.next_state(current_state, action_)
-            score = self.alpha_beta_2(next_state, depth+1, alpha, beta)
-        #     score = self.min_value(depth, self.next_state(self.state, action), alpha, beta)
-            if score > beta:
-                return beta, action_
-            if score > alpha:
-                alpha = score
-                next_action = action_
+        current_rank = 1
+        task_distribution = {}
+        for order, action_ in enumerate(actions[1:]):
+            next_state = AlphaBetaPruner.next_state(current_state, action_)
+            if SIZE > 1:
+                """ 
+                Multi threaded
+                Sending data
+                """
+                data = {
+                    'next_state': next_state,
+                    'depth': depth+1,
+                    'max_depth': self.max_depth,
+                    'alpha': alpha,
+                    'beta': beta,
+                    'order': order
+                }
+                COMM.isend(data, dest=current_rank)
+                task_distribution[order] = {
+                    'rank': current_rank,
+                    'data': data,
+                    'action': action_,
+                    'score': None
+                }
+
+                if current_rank + 1 < SIZE:
+                    current_rank = current_rank+1
+                else:
+                    current_rank = 1
+            else:
+                """ Single threaded """
+                score = AlphaBetaPruner.alpha_beta_2(next_state, depth+1, self.max_depth, alpha, beta)
+
+                if score > beta:
+                    return beta, action_
+
+                if score > alpha:
+                    alpha = score
+                    next_action = action_
+
+        if SIZE > 1:
+            """ 
+            Multi threaded 
+            Receiving data
+            """
+            wait = True
+            while wait:
+                # TODO find another solution to wait for messages to get back
+                wait = False
+                for _ in list(task_distribution.values()):
+                    req = COMM.irecv()
+                    response = req.wait()
+                    task_distribution[response[0]]['score'] = response[1]
+                    if _['score'] is None:
+                        wait = True
+
+            for key, value in task_distribution.items():
+                score = value['score']
+                action_ = value['action']
+                if score > beta:
+                    return beta, action_
+
+                if score > alpha:
+                    alpha = score
+                    next_action = action_
+
+            # for proc_rank in range(1, SIZE):
+            #     COMM.isend(STOP_MESSAGE, dest=proc_rank)
 
         return alpha, next_action
 
-    def alpha_beta_2(self, current_state, depth, alpha, beta):
-        actions = self.actions(current_state)
+    @staticmethod
+    def alpha_beta_2(current_state, depth, max_depth, alpha, beta):
+        actions = AlphaBetaPruner.actions(current_state)
 
-        if self.is_leaf(depth) or not actions:
-            return self.evaluation(current_state, self.opponent(current_state[0]))
+        if depth > max_depth or not actions:
+            return AlphaBetaPruner.evaluation(current_state, AlphaBetaPruner.opponent(current_state[0]))
 
-        best_score = beta if self.is_min(depth) else alpha
+        best_score = beta if AlphaBetaPruner.is_min(depth) else alpha
 
         for action in actions:
-            next_state = self.next_state(current_state, action)
+            next_state = AlphaBetaPruner.next_state(current_state, action)
 
-            if self.is_min(depth):
-                score = self.alpha_beta_2(next_state, depth+1, alpha, best_score)
+            if AlphaBetaPruner.is_min(depth):
+                score = AlphaBetaPruner.alpha_beta_2(next_state, depth+1, max_depth, alpha, best_score)
                 if score <= alpha:
                     return alpha
                 if score < best_score:
                     best_score = score
             else:
-                score = self.alpha_beta_2(next_state, depth+1, best_score, beta)
+                score = AlphaBetaPruner.alpha_beta_2(next_state, depth+1, max_depth, best_score, beta)
                 if score >= beta:
                     return beta
                 if score > best_score:
@@ -82,17 +146,18 @@ class AlphaBetaPruner(object):
 
         return best_score
 
-    def is_min(self, depth):
+    @staticmethod
+    def is_min(depth):
         return depth % 2 == 1
 
     def alpha_beta(self, current_state, depth, alpha, beta):
-        actions = self.actions(current_state)
+        actions = AlphaBetaPruner.actions(current_state)
 
         if self.is_leaf(depth) or not actions:
-            return self.evaluation(current_state, self.opponent(current_state[0]))
+            return AlphaBetaPruner.evaluation(current_state, AlphaBetaPruner.opponent(current_state[0]))
 
         for action in actions:
-            next_state = self.next_state(current_state, action)
+            next_state = AlphaBetaPruner.next_state(current_state, action)
             score = - self.alpha_beta(next_state, depth+1, -beta, -alpha)
             if score >= beta:
                 return beta
@@ -106,10 +171,10 @@ class AlphaBetaPruner(object):
         """
 
         depth = 0
-        fn = lambda action: self.min_value(depth, self.next_state(self.state, action), -self.infinity,
+        fn = lambda action: self.min_value(depth, AlphaBetaPruner.next_state(self.state, action), -self.infinity,
                                            self.infinity)
         maxfn = lambda value: value[0]
-        actions = self.actions(self.state)
+        actions = AlphaBetaPruner.actions(self.state)
         moves = [(fn(action), action) for action in actions]
 
         if len(moves) == 0:
@@ -121,13 +186,13 @@ class AlphaBetaPruner(object):
         """ Calculates the best possible move for the AI.
         """
         if self.is_leaf(depth):
-            return self.evaluation(current_state, self.first_player)
+            return AlphaBetaPruner.evaluation(current_state, self.first_player)
 
         value = -self.infinity
 
-        actions = self.actions(current_state)
+        actions = AlphaBetaPruner.actions(current_state)
         for action in actions:
-            value = max([value, self.min_value(depth + 1, self.next_state(current_state, action), alpha, beta)])
+            value = max([value, self.min_value(depth + 1, AlphaBetaPruner.next_state(current_state, action), alpha, beta)])
             if value >= beta:
                 return value
             alpha = max(alpha, value)
@@ -138,38 +203,39 @@ class AlphaBetaPruner(object):
         """ Calculates the best possible move for the player.
         """
         if self.is_leaf(depth):
-            return self.evaluation(state, self.second_player)
+            return AlphaBetaPruner.evaluation(state, self.second_player)
 
         value = self.infinity
 
-        actions = self.actions(state)
+        actions = AlphaBetaPruner.actions(state)
         for action in actions:
-            value = min([value, self.max_value(depth + 1, self.next_state(state, action), alpha, beta)])
+            value = min([value, self.max_value(depth + 1, AlphaBetaPruner.next_state(state, action), alpha, beta)])
             if value <= alpha:
                 return value
             beta = min([beta, value])
 
         return value
 
-    def evaluation(self, current_state, player_to_check):
+    @staticmethod
+    def evaluation(current_state, player_to_check):
         """ Returns a positive value when the player wins.
             Returns zero when there is a draw.
             Returns a negative value when the opponent wins."""
 
         player_state, state = current_state
         player = player_to_check
-        opponent = self.opponent(player)
+        opponent = AlphaBetaPruner.opponent(player)
 
         # count_eval stands for the player with the most pieces next turn
-        moves = self.get_moves(player, opponent, state)
+        moves = AlphaBetaPruner.get_moves(player, opponent, state)
         player_pieces = len([p for p in state if p == player])
         opponent_pieces = len([p for p in state if p == opponent])
         count_eval = 1 if player_pieces > opponent_pieces else \
             0 if player_pieces == opponent_pieces else \
-                -1
+            -1
 
         # moves_player    = moves
-        # moves_oppponent = self.get_moves(opponent, player, state)
+        # moves_oppponent = AlphaBetaPruner.get_moves(opponent, player, state)
         # move_eval       = 1 if moves_player > moves_oppponent else \
         #                   0 if moves_player == moves_oppponent else \
         #                  -1
@@ -194,23 +260,26 @@ class AlphaBetaPruner(object):
 
         return eval
 
-    def actions(self, current_state):
+    @staticmethod
+    def actions(current_state):
         """ Returns a list of tuples as coordinates for the valid moves for the current player.
         """
         player, state = current_state
-        return self.get_moves(player, self.opponent(player), state)
+        return AlphaBetaPruner.get_moves(player, AlphaBetaPruner.opponent(player), state)
 
-    def opponent(self, player):
+    @staticmethod
+    def opponent(player):
         """ Returns the opponent of the specified player.
         """
-        return self.second_player if player is self.first_player else self.first_player
+        return BLACK_ID if player is WHITE_ID else WHITE_ID
 
-    def next_state(self, current_state, action):
+    @staticmethod
+    def next_state(current_state, action):
         """ Returns the next state in the form of a "current_state" tuple, (current_player, state).
         """
         player, state = current_state
         # player, state = current_state[0], current_state[1].copy()
-        opponent = self.opponent(player)
+        opponent = AlphaBetaPruner.opponent(player)
 
         xx, yy = action
         state[xx + (yy * WIDTH)] = player
@@ -219,7 +288,7 @@ class AlphaBetaPruner(object):
             if tile < 0 or tile >= (WIDTH - 1) * WIDTH:
                 continue
 
-            while state[tile] != self.board:
+            while state[tile] != BOARD_ID:
                 state[tile] = player
                 tile += d
                 if tile < 0 or tile >= WIDTH * HEIGHT:
@@ -228,17 +297,19 @@ class AlphaBetaPruner(object):
 
         return opponent, state
 
-    def get_moves(self, player, opponent, state):
+    @staticmethod
+    def get_moves(player, opponent, state):
         """ Returns a generator of (x,y) coordinates.
         """
-        moves = [self.mark_move(player, opponent, tile, state, d)
+        moves = [AlphaBetaPruner.mark_move(player, opponent, tile, state, d)
                  for tile in range(WIDTH * HEIGHT)
                  for d in DIRECTIONS
                  if not outside_board(tile, d) and state[tile] == player]
 
         return [(x, y) for found, x, y, tile in moves if found]
 
-    def mark_move(self, player, opponent, tile, pieces, direction):
+    @staticmethod
+    def mark_move(player, opponent, tile, pieces, direction):
         """ Returns True whether the current tile piece is a move for the current player,
             otherwise it returns False.
         """
@@ -254,7 +325,7 @@ class AlphaBetaPruner(object):
                 else:
                     tile += direction
 
-            if pieces[tile] == self.board:
+            if pieces[tile] == BOARD_ID:
                 return True, int(tile % WIDTH), int(tile / HEIGHT), tile
 
         return False, int(tile % WIDTH), int(tile / HEIGHT), tile

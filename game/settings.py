@@ -13,6 +13,13 @@ NORTHWEST = -HEIGHT - 1
 
 DIRECTIONS = (NORTH, NORTHEAST, EAST, SOUTHEAST, SOUTH, SOUTHWEST, WEST, NORTHWEST)
 
+BOARD_ID = 0
+MOVE_ID = 1
+WHITE_ID = 2
+BLACK_ID = 3
+
+STOP_MESSAGE = -1
+
 
 def chunks(l, n):
     """ Yield successive n-sized chunks from l.

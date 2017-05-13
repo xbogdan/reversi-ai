@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
+from mpi4py import MPI
 from game.game import Game
+from game.settings import STOP_MESSAGE
+
+COMM = MPI.COMM_WORLD
+RANK = COMM.Get_rank()
 
 
 def main():
@@ -37,4 +42,17 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    if RANK == 0:
+        main()
+    else:
+        from game.ai import AlphaBetaPruner
+
+        while True:
+            req = COMM.irecv(source=0)
+            data = req.wait()
+            # print(data)
+
+            score = AlphaBetaPruner.alpha_beta_2(current_state=data['next_state'], depth=data['depth'],
+                                                 max_depth=data['max_depth'], alpha=data['alpha'], beta=data['beta'])
+            req = COMM.isend((data['order'], score), dest=0)
