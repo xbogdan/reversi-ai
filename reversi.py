@@ -21,7 +21,7 @@ def main():
     if args.depth < 0:
         exit()
 
-    players=[]
+    players = []
     if args.player:
         players = ['player', 'ai']
     if args.ai:

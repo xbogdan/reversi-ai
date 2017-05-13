@@ -1,8 +1,3 @@
-import datetime
-import sys
-
-from game.board import Board
-from game.piece import Piece
 from game.settings import *
 
 __author__ = 'bengt'
@@ -18,7 +13,6 @@ class AlphaBetaPruner(object):
         self.white = 2
         self.black = 3
         self.max_depth = max_depth
-        # self.lifetime = None
         self.infinity = 1.0e400
         self.first_player, self.second_player = (self.white, self.black) \
             if first_player == WHITE else (self.black, self.white)
@@ -37,7 +31,7 @@ class AlphaBetaPruner(object):
         actions = self.actions(current_state)
 
         if (self.is_leaf(depth) or not actions) and action:
-            return self.evaluation(current_state, self.get_next_player(current_state[0])), action
+            return self.evaluation(current_state, self.opponent(current_state[0])), action
 
         next_action = actions[0]
         next_state = self.next_state(current_state, next_action)
@@ -66,7 +60,7 @@ class AlphaBetaPruner(object):
         actions = self.actions(current_state)
 
         if self.is_leaf(depth) or not actions:
-            return self.evaluation(current_state, self.get_next_player(current_state[0]))
+            return self.evaluation(current_state, self.opponent(current_state[0]))
 
         best_score = beta if self.is_min(depth) else alpha
 
@@ -95,7 +89,7 @@ class AlphaBetaPruner(object):
         actions = self.actions(current_state)
 
         if self.is_leaf(depth) or not actions:
-            return self.evaluation(current_state, self.get_next_player(current_state[0]))
+            return self.evaluation(current_state, self.opponent(current_state[0]))
 
         for action in actions:
             next_state = self.next_state(current_state, action)
@@ -106,14 +100,6 @@ class AlphaBetaPruner(object):
                 alpha = score
 
         return alpha
-
-    def is_leaf(self, depth):
-        return self.cutoff_test(depth)
-
-    def get_next_player(self, player):
-        if player == self.first_player:
-            return self.second_player
-        return self.first_player
 
     def alpha_beta_search(self):
         """ Returns a valid action for the AI.
@@ -273,7 +259,7 @@ class AlphaBetaPruner(object):
 
         return False, int(tile % WIDTH), int(tile / HEIGHT), tile
 
-    def cutoff_test(self, depth):
+    def is_leaf(self, depth):
         """ Returns True when the cutoff limit has been reached.
         """
         return depth > self.max_depth
