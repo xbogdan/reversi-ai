@@ -1,4 +1,4 @@
-import datetime
+from mpi4py import MPI
 import threading
 from game.ai import AlphaBetaPruner
 
@@ -23,5 +23,6 @@ class Brain(threading.Thread):
         """
         pruner = AlphaBetaPruner(self.mutex, self.max_depth, self.pieces, self.first_player)
         result = pruner.run()
+
         self.q.put(result)
 

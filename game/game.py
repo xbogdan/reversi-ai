@@ -1,10 +1,14 @@
 import os
+from mpi4py import MPI
 from collections import deque
 from game.board import Board
 from game.controllers import PlayerController, AiController
 from game.settings import *
 
 __author__ = 'bengt'
+
+COMM = MPI.COMM_WORLD
+SIZE = COMM.Get_size()
 
 
 class Game(object):
@@ -91,19 +95,22 @@ class Game(object):
 
                 if blacks > whites:
                     print("Black won this game.")
-                    exit()
+                    break
                 elif blacks == whites:
                     print("This game was a tie.")
-                    exit()
+                    break
                 else:
                     print("White won this game.")
-                    exit()
+                    break
 
             self.controllers.rotate()
 
             print("Current move is: ", self.to_board_coordinates(next_move))
 
             self.previous_move = next_move
+
+        for i in range(1, SIZE):
+            COMM.isend(-1, dest=i, tag=1)
 
     def to_board_coordinates(self, coordinate):
         """ Transforms an (x, y) tuple into (a-h, 1-8) tuple.

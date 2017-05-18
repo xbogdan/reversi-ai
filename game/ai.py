@@ -49,11 +49,13 @@ class AlphaBetaPruner(object):
 
         # parallel
         current_rank = 1
+        total_task_nr = len(actions[1:])
         task_distribution = {}
+
         for order, action_ in enumerate(actions[1:]):
             next_state = AlphaBetaPruner.next_state(current_state, action_)
             if SIZE > 1:
-                """ 
+                """
                 Multi threaded
                 Sending data
                 """
@@ -65,21 +67,17 @@ class AlphaBetaPruner(object):
                     'beta': beta,
                     'order': order
                 }
-                COMM.isend(data, dest=current_rank)
+                COMM.isend(data, dest=current_rank, tag=1)
                 task_distribution[order] = {
                     'rank': current_rank,
                     'data': data,
                     'action': action_,
                     'score': None
                 }
-
-                if current_rank + 1 < SIZE:
-                    current_rank = current_rank+1
-                else:
-                    current_rank = 1
+                current_rank = current_rank+1 if current_rank+1 < SIZE else 1
             else:
                 """ Single threaded """
-                score = AlphaBetaPruner.alpha_beta_2(next_state, depth+1, self.max_depth, alpha, beta)
+                score = AlphaBetaPruner.alpha_beta(next_state, depth+1, self.max_depth, alpha, beta)
 
                 if score > beta:
                     return beta, action_
@@ -89,20 +87,14 @@ class AlphaBetaPruner(object):
                     next_action = action_
 
         if SIZE > 1:
-            """ 
+            """
             Multi threaded 
             Receiving data
             """
-            wait = True
-            while wait:
-                # TODO find another solution to wait for messages to get back
-                wait = False
-                for _ in list(task_distribution.values()):
-                    req = COMM.irecv()
-                    response = req.wait()
-                    task_distribution[response[0]]['score'] = response[1]
-                    if _['score'] is None:
-                        wait = True
+            for _ in range(0, total_task_nr):
+                req = COMM.irecv(tag=1)
+                response = req.wait()
+                task_distribution[response[0]]['score'] = response[1]
 
             for key, value in task_distribution.items():
                 score = value['score']
@@ -114,13 +106,10 @@ class AlphaBetaPruner(object):
                     alpha = score
                     next_action = action_
 
-            # for proc_rank in range(1, SIZE):
-            #     COMM.isend(STOP_MESSAGE, dest=proc_rank)
-
         return alpha, next_action
 
     @staticmethod
-    def alpha_beta_2(current_state, depth, max_depth, alpha, beta):
+    def alpha_beta(current_state, depth, max_depth, alpha, beta):
         actions = AlphaBetaPruner.actions(current_state)
 
         if depth > max_depth or not actions:
@@ -132,13 +121,13 @@ class AlphaBetaPruner(object):
             next_state = AlphaBetaPruner.next_state(current_state, action)
 
             if AlphaBetaPruner.is_min(depth):
-                score = AlphaBetaPruner.alpha_beta_2(next_state, depth+1, max_depth, alpha, best_score)
+                score = AlphaBetaPruner.alpha_beta(next_state, depth + 1, max_depth, alpha, best_score)
                 if score <= alpha:
                     return alpha
                 if score < best_score:
                     best_score = score
             else:
-                score = AlphaBetaPruner.alpha_beta_2(next_state, depth+1, max_depth, best_score, beta)
+                score = AlphaBetaPruner.alpha_beta(next_state, depth + 1, max_depth, best_score, beta)
                 if score >= beta:
                     return beta
                 if score > best_score:
@@ -150,71 +139,71 @@ class AlphaBetaPruner(object):
     def is_min(depth):
         return depth % 2 == 1
 
-    def alpha_beta(self, current_state, depth, alpha, beta):
-        actions = AlphaBetaPruner.actions(current_state)
+    # def alpha_beta(self, current_state, depth, alpha, beta):
+    #     actions = AlphaBetaPruner.actions(current_state)
+    #
+    #     if self.is_leaf(depth) or not actions:
+    #         return AlphaBetaPruner.evaluation(current_state, AlphaBetaPruner.opponent(current_state[0]))
+    #
+    #     for action in actions:
+    #         next_state = AlphaBetaPruner.next_state(current_state, action)
+    #         score = - self.alpha_beta(next_state, depth+1, -beta, -alpha)
+    #         if score >= beta:
+    #             return beta
+    #         if score > alpha:
+    #             alpha = score
+    #
+    #     return alpha
 
-        if self.is_leaf(depth) or not actions:
-            return AlphaBetaPruner.evaluation(current_state, AlphaBetaPruner.opponent(current_state[0]))
+    # def alpha_beta_search(self):
+    #     """ Returns a valid action for the AI.
+    #     """
+    #
+    #     depth = 0
+    #     fn = lambda action: self.min_value(depth, AlphaBetaPruner.next_state(self.state, action), -self.infinity,
+    #                                        self.infinity)
+    #     maxfn = lambda value: value[0]
+    #     actions = AlphaBetaPruner.actions(self.state)
+    #     moves = [(fn(action), action) for action in actions]
+    #
+    #     if len(moves) == 0:
+    #         raise NoMovesError
+    #
+    #     return max(moves, key=maxfn)[1]
 
-        for action in actions:
-            next_state = AlphaBetaPruner.next_state(current_state, action)
-            score = - self.alpha_beta(next_state, depth+1, -beta, -alpha)
-            if score >= beta:
-                return beta
-            if score > alpha:
-                alpha = score
+    # def max_value(self, depth, current_state, alpha, beta):
+    #     """ Calculates the best possible move for the AI.
+    #     """
+    #     if self.is_leaf(depth):
+    #         return AlphaBetaPruner.evaluation(current_state, self.first_player)
+    #
+    #     value = -self.infinity
+    #
+    #     actions = AlphaBetaPruner.actions(current_state)
+    #     for action in actions:
+    #         value = max([value, self.min_value(depth + 1, AlphaBetaPruner.next_state(current_state, action), alpha, beta)])
+    #         if value >= beta:
+    #             return value
+    #         alpha = max(alpha, value)
+    #
+    #     return value
 
-        return alpha
-
-    def alpha_beta_search(self):
-        """ Returns a valid action for the AI.
-        """
-
-        depth = 0
-        fn = lambda action: self.min_value(depth, AlphaBetaPruner.next_state(self.state, action), -self.infinity,
-                                           self.infinity)
-        maxfn = lambda value: value[0]
-        actions = AlphaBetaPruner.actions(self.state)
-        moves = [(fn(action), action) for action in actions]
-
-        if len(moves) == 0:
-            raise NoMovesError
-
-        return max(moves, key=maxfn)[1]
-
-    def max_value(self, depth, current_state, alpha, beta):
-        """ Calculates the best possible move for the AI.
-        """
-        if self.is_leaf(depth):
-            return AlphaBetaPruner.evaluation(current_state, self.first_player)
-
-        value = -self.infinity
-
-        actions = AlphaBetaPruner.actions(current_state)
-        for action in actions:
-            value = max([value, self.min_value(depth + 1, AlphaBetaPruner.next_state(current_state, action), alpha, beta)])
-            if value >= beta:
-                return value
-            alpha = max(alpha, value)
-
-        return value
-
-    def min_value(self, depth, state, alpha, beta):
-        """ Calculates the best possible move for the player.
-        """
-        if self.is_leaf(depth):
-            return AlphaBetaPruner.evaluation(state, self.second_player)
-
-        value = self.infinity
-
-        actions = AlphaBetaPruner.actions(state)
-        for action in actions:
-            value = min([value, self.max_value(depth + 1, AlphaBetaPruner.next_state(state, action), alpha, beta)])
-            if value <= alpha:
-                return value
-            beta = min([beta, value])
-
-        return value
+    # def min_value(self, depth, state, alpha, beta):
+    #     """ Calculates the best possible move for the player.
+    #     """
+    #     if self.is_leaf(depth):
+    #         return AlphaBetaPruner.evaluation(state, self.second_player)
+    #
+    #     value = self.infinity
+    #
+    #     actions = AlphaBetaPruner.actions(state)
+    #     for action in actions:
+    #         value = min([value, self.max_value(depth + 1, AlphaBetaPruner.next_state(state, action), alpha, beta)])
+    #         if value <= alpha:
+    #             return value
+    #         beta = min([beta, value])
+    #
+    #     return value
 
     @staticmethod
     def evaluation(current_state, player_to_check):
