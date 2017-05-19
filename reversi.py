@@ -4,6 +4,7 @@ import argparse
 from mpi4py import MPI
 from game.game import Game
 from datetime import datetime
+from game.ai import AlphaBetaPruner
 
 COMM = MPI.COMM_WORLD
 RANK = COMM.Get_rank()
@@ -44,6 +45,7 @@ def main():
 if __name__ == "__main__":
 
     if RANK == 0:
+        # MAIN
         t_start = datetime.now()
 
         main()
@@ -51,14 +53,14 @@ if __name__ == "__main__":
         duration = datetime.now() - t_start
         print(f'Finished in {duration}')
     else:
-        from game.ai import AlphaBetaPruner
-
+        # WORKER
         while True:
             req = COMM.irecv(source=0, tag=1)
             data = req.wait()
             if data == -1:
                 break
 
+            # execute alpha_beta
             score = AlphaBetaPruner.alpha_beta(current_state=data['next_state'], depth=data['depth'],
                                                max_depth=data['max_depth'], alpha=data['alpha'], beta=data['beta'])
 

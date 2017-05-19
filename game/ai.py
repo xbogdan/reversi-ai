@@ -6,7 +6,7 @@ SIZE = COMM.Get_size()
 
 
 class AlphaBetaPruner(object):
-    """Alpha-Beta Pruning algorithm."""
+    """Alpha-Beta Pruning with pvsplit algorithm."""
 
     def __init__(self, mutex, max_depth, pieces, first_player):
         self.mutex = mutex
@@ -21,7 +21,8 @@ class AlphaBetaPruner(object):
         self.state = self.make_state(pieces)
 
     def make_state(self, pieces):
-        """ Returns a tuple in the form of "current_state", that is: (current_player, state).
+        """ 
+        Returns a tuple in the form of "current_state", that is: (current_player, state).
         """
         results = {BOARD: BOARD_ID, MOVE: BOARD_ID, WHITE: WHITE_ID, BLACK: BLACK_ID}
         return self.first_player, [results[p.get_state()] for p in pieces]
@@ -183,20 +184,23 @@ class AlphaBetaPruner(object):
 
     @staticmethod
     def actions(current_state):
-        """ Returns a list of tuples as coordinates for the valid moves for the current player.
+        """ 
+        Returns a list of tuples as coordinates for the valid moves for the current player.
         """
         player, state = current_state
         return AlphaBetaPruner.get_moves(player, AlphaBetaPruner.opponent(player), state)
 
     @staticmethod
     def opponent(player):
-        """ Returns the opponent of the specified player.
+        """ 
+        Returns the opponent of the specified player.
         """
         return BLACK_ID if player is WHITE_ID else WHITE_ID
 
     @staticmethod
     def next_state(current_state, action):
-        """ Returns the next state in the form of a "current_state" tuple, (current_player, state).
+        """ 
+        Returns the next state in the form of a "current_state" tuple, (current_player, state).
         """
         player, state = current_state
         # player, state = current_state[0], current_state[1].copy()
@@ -220,7 +224,8 @@ class AlphaBetaPruner(object):
 
     @staticmethod
     def get_moves(player, opponent, state):
-        """ Returns a generator of (x,y) coordinates.
+        """ 
+        Returns a generator of (x,y) coordinates.
         """
         moves = [AlphaBetaPruner.mark_move(player, opponent, tile, state, d)
                  for tile in range(WIDTH * HEIGHT)
@@ -231,8 +236,9 @@ class AlphaBetaPruner(object):
 
     @staticmethod
     def mark_move(player, opponent, tile, pieces, direction):
-        """ Returns True whether the current tile piece is a move for the current player,
-            otherwise it returns False.
+        """ 
+        Returns True whether the current tile piece is a move for the current player,
+        otherwise it returns False.
         """
         if not outside_board(tile, direction):
             tile += direction
@@ -252,7 +258,8 @@ class AlphaBetaPruner(object):
         return False, int(tile % WIDTH), int(tile / HEIGHT), tile
 
     def is_leaf(self, depth):
-        """ Returns True when the cutoff limit has been reached.
+        """ 
+        Returns True when the cutoff limit has been reached.
         """
         return depth > self.max_depth
 
