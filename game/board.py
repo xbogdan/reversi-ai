@@ -1,8 +1,6 @@
 from game.piece import Piece
 from game.settings import *
 
-__author__ = 'bengt'
-
 
 class Board(object):
     """Board represents the current state of the Reversi board."""

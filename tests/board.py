@@ -1,8 +1,6 @@
 from game.board import Board
 from game.settings import *
 
-__author__ = 'bengt'
-
 import unittest
 
 

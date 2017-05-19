@@ -2,8 +2,6 @@ import sys
 from game.settings import *
 from game import color as clr
 
-__author__ = 'bengt'
-
 
 class Piece(object):
     """Pieces are laid out on the board on an 8x8 grid."""

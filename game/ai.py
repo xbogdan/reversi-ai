@@ -1,8 +1,6 @@
 from game.settings import *
 from mpi4py import MPI
 
-__author__ = 'bengt'
-
 COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 
@@ -138,72 +136,6 @@ class AlphaBetaPruner(object):
     @staticmethod
     def is_min(depth):
         return depth % 2 == 1
-
-    # def alpha_beta(self, current_state, depth, alpha, beta):
-    #     actions = AlphaBetaPruner.actions(current_state)
-    #
-    #     if self.is_leaf(depth) or not actions:
-    #         return AlphaBetaPruner.evaluation(current_state, AlphaBetaPruner.opponent(current_state[0]))
-    #
-    #     for action in actions:
-    #         next_state = AlphaBetaPruner.next_state(current_state, action)
-    #         score = - self.alpha_beta(next_state, depth+1, -beta, -alpha)
-    #         if score >= beta:
-    #             return beta
-    #         if score > alpha:
-    #             alpha = score
-    #
-    #     return alpha
-
-    # def alpha_beta_search(self):
-    #     """ Returns a valid action for the AI.
-    #     """
-    #
-    #     depth = 0
-    #     fn = lambda action: self.min_value(depth, AlphaBetaPruner.next_state(self.state, action), -self.infinity,
-    #                                        self.infinity)
-    #     maxfn = lambda value: value[0]
-    #     actions = AlphaBetaPruner.actions(self.state)
-    #     moves = [(fn(action), action) for action in actions]
-    #
-    #     if len(moves) == 0:
-    #         raise NoMovesError
-    #
-    #     return max(moves, key=maxfn)[1]
-
-    # def max_value(self, depth, current_state, alpha, beta):
-    #     """ Calculates the best possible move for the AI.
-    #     """
-    #     if self.is_leaf(depth):
-    #         return AlphaBetaPruner.evaluation(current_state, self.first_player)
-    #
-    #     value = -self.infinity
-    #
-    #     actions = AlphaBetaPruner.actions(current_state)
-    #     for action in actions:
-    #         value = max([value, self.min_value(depth + 1, AlphaBetaPruner.next_state(current_state, action), alpha, beta)])
-    #         if value >= beta:
-    #             return value
-    #         alpha = max(alpha, value)
-    #
-    #     return value
-
-    # def min_value(self, depth, state, alpha, beta):
-    #     """ Calculates the best possible move for the player.
-    #     """
-    #     if self.is_leaf(depth):
-    #         return AlphaBetaPruner.evaluation(state, self.second_player)
-    #
-    #     value = self.infinity
-    #
-    #     actions = AlphaBetaPruner.actions(state)
-    #     for action in actions:
-    #         value = min([value, self.max_value(depth + 1, AlphaBetaPruner.next_state(state, action), alpha, beta)])
-    #         if value <= alpha:
-    #             return value
-    #         beta = min([beta, value])
-    #
-    #     return value
 
     @staticmethod
     def evaluation(current_state, player_to_check):

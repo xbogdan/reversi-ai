@@ -1,5 +1,3 @@
-__author__ = 'bengt'
-
 BOARD, WHITE, BLACK, MOVE = 'BOARD', 'WHITE', 'BLACK', 'MOVE'
 WIDTH, HEIGHT = 8, 8
 NORTH = -HEIGHT

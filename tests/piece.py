@@ -1,8 +1,6 @@
 from game.settings import *
 from game.piece import Piece
 
-__author__ = 'bengt'
-
 import unittest
 
 

@@ -7,8 +7,6 @@ from game.ai import AlphaBetaPruner
 from game.brain import Brain
 from game.settings import *
 
-__author__ = 'bengt'
-
 
 class Controller(object):
     """ Interface for different types of controllers of the board

@@ -5,8 +5,6 @@ from game.board import Board
 from game.controllers import PlayerController, AiController
 from game.settings import *
 
-__author__ = 'bengt'
-
 COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 

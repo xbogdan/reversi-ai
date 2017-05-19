@@ -2,8 +2,6 @@ from mpi4py import MPI
 import threading
 from game.ai import AlphaBetaPruner
 
-__author__ = 'bengt'
-
 
 class Brain(threading.Thread):
     def __init__(self, max_depth, mutex, q, pieces, first_player, second_player):
